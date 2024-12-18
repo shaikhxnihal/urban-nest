@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
+import 'package:urban_nest/backend/auth/auth_model.dart';
 import 'package:urban_nest/screens/home/home_screen.dart';
 import 'package:urban_nest/screens/home/index_screen.dart';
 
 class OtpScreen extends StatefulWidget {
-  final String verificationId;
+  final String userId;
   final String mobileNumber;
 
   const OtpScreen({
     super.key,
-    required this.verificationId,
+    required this.userId,
     required this.mobileNumber,
   });
 
@@ -21,39 +22,33 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final TextEditingController _otpController = TextEditingController();
   bool _isVerifying = false;
+  final AuthService _authService = AuthService();
+  
 
-  void _verifyOtp() async {
-    if (_otpController.text.isEmpty || _otpController.text.length < 6) {
+  void _verifyOTP() async {
+    final otp = _otpController.text.trim();
+    print(widget.userId);
+
+    if (otp.isEmpty ) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid 6-digit OTP")),
+        SnackBar(content: Text('Please enter the OTP')),
       );
       return;
     }
 
-    setState(() => _isVerifying = true);
-
     try {
-      FirebaseAuth auth = FirebaseAuth.instance;
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: widget.verificationId,
-        smsCode: _otpController.text.trim(),
-      );
-
-      await auth.signInWithCredential(credential);
-
-      setState(() => _isVerifying = false);
-
+      
+      final session = await _authService.verifyPhoneAuth(widget.userId, otp);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Phone number verified successfully!")),
-      );
+        SnackBar(content: Text('Phone verification successful!')));
 
-      // Navigate to Home or Dashboard
-      Navigator.popUntil(context, (route) => route.isFirst);
+      // Navigate to the dashboard or home screen
+      Get.to(() => const IndexScreen());
     } catch (e) {
-      setState(() => _isVerifying = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid OTP or verification failed")),
+        SnackBar(content: Text(e.toString())),
       );
+      print(e.toString());
     }
   }
 
@@ -84,9 +79,7 @@ class _OtpScreenState extends State<OtpScreen> {
             _isVerifying
                 ? const Center(child: CircularProgressIndicator())
                 : InkWell(
-                  onTap: () {
-                    Get.to(() => const IndexScreen());
-                  },
+                  onTap: _verifyOTP,
                   child: const Card(
                       color: Colors.blue,
                       child: Padding(

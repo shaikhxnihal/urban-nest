@@ -1,12 +1,17 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
 import 'package:get/get.dart';
+import 'package:urban_nest/backend/auth/auth_model.dart';
 import 'package:urban_nest/constants/image_links.dart';
 import 'package:urban_nest/screens/auth/sign-in/otp_screen.dart';
 import 'package:urban_nest/screens/auth/sign-in/phone_auth_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+   LoginScreen({super.key});
+
+  
+  
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -14,6 +19,40 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   TextEditingController _phoneController = TextEditingController();
+  
+  final AuthService _authService = AuthService();
+
+  bool _isOTPSent = false;
+  String _userId = ''; // Store the user ID for OTP verification
+
+  void _sendOTP() async {
+    final phoneNumber = _phoneController.text.trim();
+
+    if (phoneNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your phone number')),
+      );
+      return;
+    }
+
+    try {
+      await _authService.startPhoneAuth(phoneNumber, _userId);
+      setState(() {
+        _isOTPSent = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP sent successfully!')),
+        
+      );
+      Get.to(() => OtpScreen(userId: _userId, mobileNumber: _phoneController.text,));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -85,13 +124,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
                     controller: _phoneController,
-                    onEditingComplete: () => Get.to(() => OtpScreen(verificationId: 'verificationId', mobileNumber: _phoneController.text,)),
+                    onEditingComplete: () => _sendOTP,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
+                    decoration:  InputDecoration(
                       labelText: "Enter your phone no.",
                       prefixIcon: Icon(Icons.phone),
                       border: InputBorder.none,
-                      suffixIcon: Icon(Icons.arrow_right_alt),
+                      suffixIcon: InkWell(
+                        onTap: _sendOTP,
+                        child: Icon(Icons.arrow_right_alt)),
                     ),
                   ),
                 ),

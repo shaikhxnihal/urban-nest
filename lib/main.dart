@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:urban_nest/screens/auth/sign-in/login_screen.dart';
+import 'package:urban_nest/screens/sampleScreen.dart';
+import 'package:urban_nest/test_login_screen.dart';
+import 'package:urban_nest/test_phone_auth.dart';
 
 void main() {
   runApp(const MyApp());
